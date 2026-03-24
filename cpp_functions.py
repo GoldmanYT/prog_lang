@@ -3,6 +3,15 @@ import os
 import subprocess
 import hashlib
 
+compiler_paths = [
+    r"C:\Program Files (x86)\Embarcadero\Dev-Cpp\TDM-GCC-64\bin\g++.exe",
+]
+compiler_path = 'g++'
+for path in compiler_paths:
+    if os.path.exists(path):
+        compiler_path = path
+        break
+
 filenames = ['scanner', 'sgt']
 for filename in filenames:
     cpp_filename = filename + '.cpp'
@@ -23,18 +32,22 @@ for filename in filenames:
     if len(content) == 0:
         print('File', cpp_filename, 'is empty or does not exist!')
     elif hash_str != prev_hash_str:
-        result = subprocess.run(
-            ['g++', '-fPIC', '-shared', '-o', dll_filename, cpp_filename],
-            capture_output=True
-        )
-        print('Compilation', cpp_filename, 'finished with code:', result.returncode)
-        print('stdout:')
-        print(result.stdout.decode())
-        print('stderr:')
-        print(result.stderr.decode())
-        if result.returncode == 0:
-            with open(hash_filename, 'w') as file:
-                file.write(hash_str)
+        try:
+            result = subprocess.run(
+                [compiler_path, '-fPIC', '-shared', '-o', dll_filename, cpp_filename],
+                capture_output=True
+            )
+        except:
+            print('Failed to compile', cpp_filename)
+        else:
+            print('Compilation', cpp_filename, 'finished with code:', result.returncode)
+            print('stdout:')
+            print(result.stdout.decode())
+            print('stderr:')
+            print(result.stderr.decode())
+            if result.returncode == 0:
+                with open(hash_filename, 'w') as file:
+                    file.write(hash_str)
     else:
         print('File', cpp_filename, 'already compiled!')
 
@@ -48,7 +61,8 @@ scanner.get_tokens.restype = ctypes.c_char_p
 abs_path = os.path.abspath('sgt.dll')
 sgt = ctypes.CDLL(abs_path)
 
-result = scanner.get_tokens('abc'.encode())
-print(result.decode())
+if __name__ == '__main__':
+    result = scanner.get_tokens('Привет, Мир!'.encode('cp1251'))
+    print(result.decode('cp1251'))
 
-__all__ = [scanner, sgt]
+__all__ = ['scanner', 'sgt']
