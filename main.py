@@ -36,31 +36,6 @@ class UiLayoutConstructor:
         return self.layouts[index]
 
 
-class UiGridLayoutConstructor:
-    def __init__(self, ratios, padding=0.01, axis='y'):
-        if not isinstance(axis, str):
-            raise TypeError('axis must be string, not \'{type(axis)}\'')
-
-        if axis not in ('x', 'y'):
-            raise ValueError('axis must be one of following values: \'x\', \'y\'')
-
-        if not isinstance(ratios, (list, tuple)):
-            raise TypeError(f'ratios must be list or tuple, not \'{type(ratios)}\'')
-
-        for ratio_row in ratios:
-            if not isinstance(ratio_row, (list, tuple)):
-                raise TypeError(f'ratio row must be list or tuple, not \'{type(ratio_row)}\'')
-
-            for ratio in ratio_row:
-                if not isinstance(ratio, (int, float)):
-                    raise TypeError(f'ratio row value must be int or float, not \'{type(ratio)}\'')
-
-        if axis == 'x':
-            ...
-        elif axis == 'y':
-            ...
-
-
 class Window:
     def __init__(self):
         rel_elem_full = UiLayoutConstructor(1)[0]
@@ -144,30 +119,49 @@ class Window:
         self.program_code_text.insert(END, code)
 
         self.program_code_text.tag_configure('keyword', foreground='#ff7700')
-        self.program_code_text.tag_configure('string', foreground='#00aa00')
         self.program_code_text.tag_configure('comment', foreground='#dd0000')
         self.program_code_text.tag_configure('const', foreground='#0000ff')
+        self.program_code_text.tag_configure('error', background='#ff7777')
 
-        # self.update_syntax_highlight()
+        self.update_syntax_highlight()
+        self.program_code_text.bind("<KeyRelease>", self.update_syntax_highlight)
 
-    def update_syntax_highlight(self):
-        keyword_pos = [('1.0', '1.11'),
-                       ('2.0', '2.5'),
-                       ('12.0', '12.5'),
-                       ('13.0', '13.7'),
-                       ('14.4', '14.9'),
-                       ('18.0', '18.6')]
-        for p1, p2 in keyword_pos:
-            self.program_code_text.tag_add('keyword', p1, p2)
-        comment_pos = [('13.8', '13.25')]
-        for p1, p2 in comment_pos:
-            self.program_code_text.tag_add('comment', p1, p2)
+    def update_syntax_highlight(self, *args):
+        code_to_tag = {
+            Token.lcProg: 'keyword',
+            Token.lcUsing: 'keyword',
+            Token.lcClass: 'keyword',
+            Token.lcStart: 'keyword',
+            Token.lcStop: 'keyword',
+            Token.lcVar: 'keyword',
+            Token.lcWhile: 'keyword',
+            Token.lcNum: 'const',
+            Token.lcCom: 'comment',
+            Token.lcErr: 'error',
+        }
+        for tag in code_to_tag.values():
+            self.program_code_text.tag_delete(tag)
+
+        self.program_code_text.tag_configure('keyword', foreground='#ff7700')
+        self.program_code_text.tag_configure('comment', foreground='#dd0000')
+        self.program_code_text.tag_configure('const', foreground='#0000ff')
+        self.program_code_text.tag_configure('error', background='#ff7777')
+        
+        code = self.program_code_text.get('1.0', END)
+        for i, line in enumerate(code.split('\n'), 1):
+            tokens = scanner.get_tokens(line + '\n')
+            for token in tokens:
+                index1 = f'{i}.{token.start}'
+                index2 = f'{i}.{token.end}'
+                tag = code_to_tag.get(token.code)
+                if tag is not None:
+                    self.program_code_text.tag_add(tag, index1, index2)
 
     def start_scanner_button_action(self):
-        program_code = self.program_code_text.get('1.0', END).encode('cp1251')
-        scanner_output = scanner.get_tokens(program_code).decode('cp1251')
+        program_code = self.program_code_text.get('1.0', END)
+        tokens = scanner.get_tokens(program_code)
         self.scanner_output_text.delete('1.0', END)
-        self.scanner_output_text.insert(END, scanner_output)
+        self.scanner_output_text.insert(END, '\n'.join(str(token) for token in tokens))
 
     def start_sgt_button_action(self):
         print('Запуск СУТ')

@@ -15,11 +15,11 @@ var15
   n: integer;
   x: float;
   y: float;
-  z: float,
+  z: float;
   s: MyStruct;
 start15 -- комментарий --
-  k <- i * (l + m) + n * j – 48;
-  x <- (y – z) * 3.86 + x / 5.00;
+  k <- i * (l + m) + n * j - 48;
+  x <- (y - z) * 3.86 + x / 5.00;
   while15 (x > y && z <= 0 || k = i && l /= j || m < n) {
     s.field1 <- i;
     s.field2 <- x;
