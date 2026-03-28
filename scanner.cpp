@@ -226,7 +226,8 @@ Token formToken(int state, Token& token, char* str) {
     result.attr = stateToToken[-state].attr;
 
     for (int code = lcProg; code < 7; code++) {
-        if (strncmp(keywords[code], str + result.start, strlen(keywords[code])) == 0) {
+        if (strlen(keywords[code]) == result.end - result.start &&
+                strncmp(keywords[code], str + result.start, strlen(keywords[code])) == 0) {
             result.code = Code(code);
             break;
         }
@@ -244,9 +245,9 @@ TokenStack* getTokens(char* code) {
         size_t row = charToTableIndex(code[pos]);
         state = stateTable[row][state];
         if (state < 0) {
-            token = formToken(state, token, code);
             pos -= shiftBackTable[-state];
             token.end = pos + 1;
+            token = formToken(state, token, code);
             state = 0;
             if (token.code != lcSp) {
                 stack->push(token);

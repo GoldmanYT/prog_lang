@@ -146,16 +146,28 @@ class Window:
         self.program_code_text.tag_configure('comment', foreground='#dd0000')
         self.program_code_text.tag_configure('const', foreground='#0000ff')
         self.program_code_text.tag_configure('error', background='#ff7777')
-        
+
+        def get_tk_index(indexes, index):
+            l = 0
+            r = len(indexes)
+            while r - l > 1:
+                m = (r + l) // 2
+                if indexes[m] >= index:
+                    r = m
+                else:
+                    l = m
+            return f'{l + 1}.{index - indexes[l] - 1}'
+
         code = self.program_code_text.get('1.0', END)
-        for i, line in enumerate(code.split('\n'), 1):
-            tokens = scanner.get_tokens(line + '\n')
-            for token in tokens:
-                index1 = f'{i}.{token.start}'
-                index2 = f'{i}.{token.end}'
-                tag = code_to_tag.get(token.code)
-                if tag is not None:
-                    self.program_code_text.tag_add(tag, index1, index2)
+        tokens = scanner.get_tokens(code)
+        indexes = [-1] + [i for i in range(len(code)) if code[i] == '\n']
+        for token in tokens:
+            tag = code_to_tag.get(token.code)
+            if tag is not None:
+                index1 = get_tk_index(indexes, token.start)
+                index2 = get_tk_index(indexes, token.end)
+                self.program_code_text.tag_add(tag, index1, index2)
+                print(tag, index1, index2)
 
     def start_scanner_button_action(self):
         program_code = self.program_code_text.get('1.0', END)
