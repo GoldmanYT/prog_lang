@@ -167,7 +167,6 @@ class Window:
                 index1 = get_tk_index(indexes, token.start)
                 index2 = get_tk_index(indexes, token.end)
                 self.program_code_text.tag_add(tag, index1, index2)
-                print(tag, index1, index2)
 
     def start_scanner_button_action(self):
         program_code = self.program_code_text.get('1.0', END)
