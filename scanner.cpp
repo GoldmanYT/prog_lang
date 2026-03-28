@@ -104,11 +104,11 @@ int stateTable[][14] = {
 };
 
 char ErrMessages[][64] = {
-    "Invalid character",
-    "Expected & after &",
-    "Expected | after |",
-    "Expected digit after .",
-    "Commentary never closed",
+    "Некорректный символ",
+    "Ожидалось \"&\" после \"&\"",
+    "Ожидалось \"|\" после \"|\"",
+    "Ожидалась цифра после \".\"",
+    "Комментарий не был закрыт"
 };
 
 char keywords[][64] = {
@@ -261,11 +261,26 @@ TokenStack* getTokens(char* code) {
         }
     }
 
+    if (state == 12 || state == 13) {
+        state = -31;
+        token.end = strlen(code);
+        token = formToken(state, token, code);
+        stack->push(token);
+    }
+
     return stack;
 }
 
 extern "C" {
     TokenStack* get_tokens(char* code) {
         return getTokens(code);
+    }
+
+    int deref_to_int(void* ptr) {
+        return *(Attr*)ptr;
+    }
+
+    char* deref_to_char_p(void* ptr) {
+        return (char*)ptr;
     }
 }
