@@ -8,6 +8,8 @@ enum Code {
     lcStop,    // stop15
     lcVar,     // var15
     lcWhile,   // while15
+    lcTrue,    // true
+    lcFalse,   // false
     lcSemi,    // ;
     lcColon,   // :
     lcDot,     // .
@@ -24,7 +26,7 @@ enum Code {
     lcComp,    // < | > | <= | >= | = | /=
     lcId,      // identifier
     lcNum,     // number
-    lcSp,      // space char
+    lcSp,      // space
     lcCom,     // commentary
     lcEof,     // end of file
     lcErr      // error
@@ -118,7 +120,9 @@ char keywords[][64] = {
     "start15",
     "stop15",
     "var15",
-    "while15"
+    "while15",
+    "true", 
+    "false"
 };
 
 Token stateToToken[] = {
@@ -230,11 +234,13 @@ Token formToken(int state, Token& token, char* str) {
     result.code = stateToToken[-state].code;
     result.attr = stateToToken[-state].attr;
 
-    for (int code = lcProg; code < 7; code++) {
-        if (strlen(keywords[code]) == result.end - result.start &&
-                strncmp(keywords[code], str + result.start, strlen(keywords[code])) == 0) {
-            result.code = Code(code);
-            break;
+    if (result.code == lcId) {
+        for (int code = lcProg; code < sizeof(keywords) / sizeof(keywords[0]); code++) {
+            if (strlen(keywords[code]) == result.end - result.start &&
+                    strncmp(keywords[code], str + result.start, strlen(keywords[code])) == 0) {
+                result.code = Code(code);
+                break;
+            }
         }
     }
 

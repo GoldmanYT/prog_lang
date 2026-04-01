@@ -149,6 +149,8 @@ class Window:
             Token.lcStop: 'keyword',
             Token.lcVar: 'keyword',
             Token.lcWhile: 'keyword',
+            Token.lcTrue: 'keyword',
+            Token.lcFalse: 'keyword',
             Token.lcNum: 'const',
             Token.lcCom: 'comment',
             Token.lcErr: 'error',

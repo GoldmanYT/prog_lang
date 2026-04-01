@@ -66,6 +66,8 @@ class Token(ctypes.Structure):
      lcStop,
      lcVar,
      lcWhile,
+     lcTrue,
+     lcFalse,
      lcSemi,
      lcColon,
      lcDot,
@@ -85,9 +87,9 @@ class Token(ctypes.Structure):
      lcSp,
      lcCom,
      lcEof,
-     lcErr) = range(27)
+     lcErr) = range(29)
 
-    names = ['prog', 'using', 'class', 'start', 'stop', 'var', 'while', ';', ':', '.', '(', ')', '{', '}', 'ass', '+',
+    names = ['prog', 'using', 'class', 'start', 'stop', 'var', 'while', 'true', 'false', ';', ':', '.', '(', ')', '{', '}', 'ass', '+',
              '*', '!', '&&', '||', 'comp', 'id', 'num', 'sp', 'com', 'eof', 'err']
 
     def get_name(self, code):
@@ -126,7 +128,7 @@ class Scanner:
 
 
 def test():
-    tokens = scanner.get_tokens('Привет, Мир!')
+    tokens = scanner.get_tokens('Привет <- Мир\n')
     print(*tokens)
 
 
