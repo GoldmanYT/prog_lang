@@ -1,4 +1,8 @@
 #include <cstring>
+#include <cstdio>
+#include <vector>
+
+using namespace std;
 
 enum Code {
     lcProg,    // procedure15
@@ -45,9 +49,24 @@ enum Attr {
     opNe    // /=
 };
 
+enum Category {
+    catProgName,
+    catTypeName,
+    catVarName,
+    catConst,
+    catNoCat
+};
+
+enum TypeCode {
+    typeVoid,
+    typeInt,
+    typeFloat,
+    typeBoolean
+};
+
 struct Token {
     Code code;
-    void* attr;
+    int attr;
     size_t start;
     size_t end;
 };
@@ -63,19 +82,6 @@ struct TokenStack {
     void pop(Token token) {
         size--;
     }
-};
-
-Attr* attrs[10] = {
-    new Attr(opAdd),  // +
-    new Attr(opSub),  // -
-    new Attr(opMult), // *
-    new Attr(opDiv),  // /
-    new Attr(opLt),   // <
-    new Attr(opGt),   // >
-    new Attr(opLe),   // <=
-    new Attr(opGe),   // >=
-    new Attr(opEq),   // =
-    new Attr(opNe)    // /=
 };
 
 int stateTable[][14] = {
@@ -110,7 +116,7 @@ char ErrMessages[][64] = {
     "Ожидалось \"&\" после \"&\"",
     "Ожидалось \"|\" после \"|\"",
     "Ожидалась цифра после \".\"",
-    "Комментарий не был закрыт"
+    "Ожидалось \"--\", встречен конец файла"
 };
 
 char keywords[][64] = {
@@ -135,29 +141,29 @@ Token stateToToken[] = {
 /*  -6 */ {lcOpCurBr, 0},
 /*  -7 */ {lcClCurBr, 0},
 /*  -8 */ {lcNot, 0},
-/*  -9 */ {lcComp, attrs[opEq]},
-/* -10 */ {lcAdd, attrs[opAdd]},
-/* -11 */ {lcMult, attrs[opMult]},
-/* -12 */ {lcMult, attrs[opDiv]},
-/* -13 */ {lcComp, attrs[opNe]},
+/*  -9 */ {lcComp, opEq},
+/* -10 */ {lcAdd, opAdd},
+/* -11 */ {lcMult, opMult},
+/* -12 */ {lcMult, opDiv},
+/* -13 */ {lcComp, opNe},
 /* -14 */ {lcAnd, 0},
 /* -15 */ {lcOr, 0},
-/* -16 */ {lcComp, attrs[opLt]},
-/* -17 */ {lcComp, attrs[opLe]},
+/* -16 */ {lcComp, opLt},
+/* -17 */ {lcComp, opLe},
 /* -18 */ {lcAss, 0},
 /* -19 */ {lcId, 0},
-/* -20 */ {lcComp, attrs[opGt]},
-/* -21 */ {lcComp, attrs[opGe]},
+/* -20 */ {lcComp, opGt},
+/* -21 */ {lcComp, opGe},
 /* -22 */ {lcNum, 0},
 /* -23 */ {lcNum, 0},
 /* -24 */ {lcSp, 0},
-/* -25 */ {lcAdd, attrs[opSub]},
+/* -25 */ {lcAdd, opSub},
 /* -26 */ {lcCom, 0},
-/* -27 */ {lcErr, ErrMessages[0]},
-/* -28 */ {lcErr, ErrMessages[1]},
-/* -29 */ {lcErr, ErrMessages[2]},
-/* -30 */ {lcErr, ErrMessages[3]},
-/* -31 */ {lcErr, ErrMessages[4]}
+/* -27 */ {lcErr, 0},
+/* -28 */ {lcErr, 1},
+/* -29 */ {lcErr, 2},
+/* -30 */ {lcErr, 3},
+/* -31 */ {lcErr, 4}
 };
 
 int shiftBackTable[] = {
@@ -195,6 +201,14 @@ int shiftBackTable[] = {
 /* -31 */ 0
 };
 
+struct Symbol {
+    char* lex;
+    int cat;
+    int type;
+    int width;
+};
+
+vector<Symbol> symbolTable;
 
 size_t charToTableIndex(char c) {
     if ('0' <= c && c <= '9') return 17;
@@ -234,14 +248,35 @@ Token formToken(int state, Token& token, char* str) {
     result.code = stateToToken[-state].code;
     result.attr = stateToToken[-state].attr;
 
-    if (result.code == lcId) {
-        for (int code = lcProg; code < sizeof(keywords) / sizeof(keywords[0]); code++) {
-            if (strlen(keywords[code]) == result.end - result.start &&
-                    strncmp(keywords[code], str + result.start, strlen(keywords[code])) == 0) {
-                result.code = Code(code);
-                break;
+    if (result.code != lcId && result.code != lcNum) {
+        return result;
+    }
+
+    bool isKeyword = false;
+    for (int code = lcProg; code < sizeof(keywords) / sizeof(keywords[0]); code++) {
+        if (strlen(keywords[code]) == result.end - result.start &&
+                strncmp(keywords[code], str + result.start, strlen(keywords[code])) == 0) {
+            result.code = Code(code);
+            isKeyword = true;
+            return result;
+        }
+    }
+    bool isInSymbolTable = false;
+    if (!isKeyword) {
+        for (int i = 0; i < symbolTable.size(); i++) {
+            if (strlen(symbolTable[i].lex) == result.end - result.start &&
+                    strncmp(symbolTable[i].lex, str + result.start, strlen(symbolTable[i].lex)) == 0) {
+                isInSymbolTable = true;
+                result.attr = i;
+                return result;
             }
         }
+    }
+    if (!isInSymbolTable) {
+        char* lex = new char[result.end - result.start + 1] {};
+        strncpy(lex, str + result.start, result.end - result.start);
+        result.attr = symbolTable.size();
+        symbolTable.push_back({ lex, 0, 0, 0 });
     }
 
     return result;
@@ -282,11 +317,15 @@ extern "C" {
         return getTokens(code);
     }
 
-    int deref_to_int(void* ptr) {
-        return *(Attr*)ptr;
+    char* get_error_message(int i) {
+        return ErrMessages[i];
     }
 
-    char* deref_to_char_p(void* ptr) {
-        return (char*)ptr;
+    size_t get_symbol_table_len() {
+        return symbolTable.size();
+    }
+
+    Symbol get_symbol(int i) {
+        return symbolTable[i];
     }
 }

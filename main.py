@@ -55,7 +55,7 @@ class Window:
         # save_load_button_frame = Frame(top_left_frame)
         # load_button = Button(save_load_button_frame, text='Загрузить', command=self.load_button_action)
         # save_button = Button(save_load_button_frame, text='Сохранить', command=self.save_button_action)
-        self.program_code_text = Text(top_left_frame, font=('Consolas', 14))
+        self.program_code_text = ScrolledText(top_left_frame, font=('Consolas', 14))
 
         bottom_left_frame = Labelframe(left_frame, text='Список найденных ошибок')
         self.errors_text = ScrolledText(bottom_left_frame, font=('Cascadia Mono', 14), foreground='#dd0000')
@@ -185,7 +185,7 @@ class Window:
         for token in tokens:
             if token.code == token.lcErr:
                 index = self.get_tk_index(token.start)
-                self.errors_text.insert(END, f'{index}: {token.get_attr()}\n')
+                self.errors_text.insert(END, f'{index}: {token.get_lex()}\n')
                 has_errors = True
         if not has_errors:
             self.errors_text.insert(END, 'Лексический анализ успешно завершен')
